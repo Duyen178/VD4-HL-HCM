@@ -1,0 +1,2536 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <link rel="stylesheet" href="css/leaflet.css">
+        <link rel="stylesheet" href="css/L.Control.Layers.Tree.css">
+        <link rel="stylesheet" href="css/L.Control.Locate.min.css">
+        <link rel="stylesheet" href="css/qgis2web.css">
+        <link rel="stylesheet" href="css/fontawesome-all.min.css">
+        <link rel="stylesheet" href="css/MarkerCluster.css">
+        <link rel="stylesheet" href="css/MarkerCluster.Default.css">
+        <link rel="stylesheet" href="css/leaflet.photon.css">
+        <link rel="stylesheet" href="css/leaflet-measure.css">
+        <style>
+        html, body, #map {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            margin: 0;
+        }
+        </style>
+        <title></title>
+    </head>
+    <body>
+        <div id="map">
+        </div>
+        <script src="js/qgis2web_expressions.js"></script>
+        <script src="js/leaflet.js"></script>
+        <script src="js/L.Control.Layers.Tree.min.js"></script>
+        <script src="js/L.Control.Locate.min.js"></script>
+        <script src="js/leaflet.rotatedMarker.js"></script>
+        <script src="js/leaflet.pattern.js"></script>
+        <script src="js/leaflet-hash.js"></script>
+        <script src="js/Autolinker.min.js"></script>
+        <script src="js/rbush.min.js"></script>
+        <script src="js/labelgun.min.js"></script>
+        <script src="js/labels.js"></script>
+        <script src="js/leaflet.photon.js"></script>
+        <script src="js/leaflet-measure.js"></script>
+        <script src="js/leaflet.markercluster.js"></script>
+        <script src="data/PhngHaLi_1.js"></script>
+        <script src="data/Vtr4T150mn200m_2.js"></script>
+        <script src="data/Vtr3T100mn150m_3.js"></script>
+        <script src="data/Vtr2T50mn150m_4.js"></script>
+        <script src="data/Vtr1TtuynngVnhai4n50m_5.js"></script>
+        <script src="data/Tuynngchnh_6.js"></script>
+        <script src="data/Tuynngvnhai4_7.js"></script>
+        <script src="data/Nicp_8.js"></script>
+        <script src="data/Dintchthuhi_9.js"></script>
+        <script src="data/Stbn_10.js"></script>
+        <script src="data/Stha_11.js"></script>
+        <script src="data/Bithnghtrvcngtrnhxydng_12.js"></script>
+        <script src="data/Bithngcytrng_13.js"></script>
+        <script src="data/Bithngvtdngphkintrc_14.js"></script>
+        <script src="data/Gitbithngvt_15.js"></script>
+        <script src="data/Tnggitttcccloi_16.js"></script>
+        <script src="data/SCNQSD_17.js"></script>
+        <script src="data/Ngythngnmcp_18.js"></script>
+        <script src="data/Hvtn_19.js"></script>
+        <script>
+        var highlightLayer;
+        function highlightFeature(e) {
+            highlightLayer = e.target;
+
+            if (e.target.feature.geometry.type === 'LineString' || e.target.feature.geometry.type === 'MultiLineString') {
+              highlightLayer.setStyle({
+                color: 'rgba(255, 255, 255, 1.00)',
+              });
+            } else {
+              highlightLayer.setStyle({
+                fillColor: 'rgba(255, 255, 255, 1.00)',
+                fillOpacity: 1
+              });
+            }
+            highlightLayer.openPopup();
+        }
+        var map = L.map('map', {
+            zoomControl:false, maxZoom:28, minZoom:1
+        }).fitBounds([[11.09486511192582,106.6458598313244],[11.130791868180108,106.72175970204592]]);
+        var hash = new L.Hash(map);
+        map.attributionControl.setPrefix('<a href="https://github.com/tomchadwin/qgis2web" target="_blank">qgis2web</a> &middot; <a href="https://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> &middot; <a href="https://qgis.org">QGIS</a>');
+        var autolinker = new Autolinker({truncate: {length: 30, location: 'smart'}});
+        // remove popup's row if "visible-with-data"
+        function removeEmptyRowsFromPopupContent(content, feature) {
+         var tempDiv = document.createElement('div');
+         tempDiv.innerHTML = content;
+         var rows = tempDiv.querySelectorAll('tr');
+         for (var i = 0; i < rows.length; i++) {
+             var td = rows[i].querySelector('td.visible-with-data');
+             var key = td ? td.id : '';
+             if (td && td.classList.contains('visible-with-data') && feature.properties[key] == null) {
+                 rows[i].parentNode.removeChild(rows[i]);
+             }
+         }
+         return tempDiv.innerHTML;
+        }
+        // modify popup if contains media
+        function addClassToPopupIfMedia(content, popup) {
+            var tempDiv = document.createElement('div');
+            tempDiv.innerHTML = content;
+            var imgTd = tempDiv.querySelector('td img');
+            if (imgTd) {
+                var src = imgTd.getAttribute('src');
+                if (/\.(jpg|jpeg|png|gif|bmp|webp|avif)$/i.test(src)) {
+                    popup._contentNode.classList.add('media');
+                    setTimeout(function() {
+                        popup.update();
+                    }, 10);
+                } else if (/\.(mp3|wav|ogg|aac)$/i.test(src)) {
+                    var audio = document.createElement('audio');
+                    audio.controls = true;
+                    audio.src = src;
+                    imgTd.parentNode.replaceChild(audio, imgTd);
+                    popup._contentNode.classList.add('media');
+                    setTimeout(function() {
+                        popup.setContent(tempDiv.innerHTML);
+                        popup.update();
+                    }, 10);
+                } else if (/\.(mp4|webm|ogg|mov)$/i.test(src)) {
+                    var video = document.createElement('video');
+                    video.controls = true;
+                    video.src = src;
+                    video.style.width = "400px";
+                    video.style.height = "300px";
+                    video.style.maxHeight = "60vh";
+                    video.style.maxWidth = "60vw";
+                    imgTd.parentNode.replaceChild(video, imgTd);
+                    popup._contentNode.classList.add('media');
+                    // Aggiorna il popup quando il video carica i metadati
+                    video.addEventListener('loadedmetadata', function() {
+                        popup.update();
+                    });
+                    setTimeout(function() {
+                        popup.setContent(tempDiv.innerHTML);
+                        popup.update();
+                    }, 10);
+                } else {
+                    popup._contentNode.classList.remove('media');
+                }
+            } else {
+                popup._contentNode.classList.remove('media');
+            }
+        }
+        var zoomControl = L.control.zoom({
+            position: 'topleft'
+        }).addTo(map);
+        L.control.locate({locateOptions: {maxZoom: 19}}).addTo(map);
+        var measureControl = new L.Control.Measure({
+            position: 'topleft',
+            primaryLengthUnit: 'meters',
+            secondaryLengthUnit: 'kilometers',
+            primaryAreaUnit: 'sqmeters',
+            secondaryAreaUnit: 'hectares'
+        });
+        measureControl.addTo(map);
+        document.getElementsByClassName('leaflet-control-measure-toggle')[0].innerHTML = '';
+        document.getElementsByClassName('leaflet-control-measure-toggle')[0].className += ' fas fa-ruler';
+        var bounds_group = new L.featureGroup([]);
+        function setBounds() {
+            map.setMaxBounds(map.getBounds());
+            map.setMinZoom(map.getZoom());
+        }
+        map.createPane('pane_IDW_Git1_0');
+        map.getPane('pane_IDW_Git1_0').style.zIndex = 400;
+        var img_IDW_Git1_0 = 'data/IDW_Git1_0.png';
+        var img_bounds_IDW_Git1_0 = [[11.112072462306756,106.65801350324594],[11.115975800676356,106.69415629874715]];
+        var layer_IDW_Git1_0 = new L.imageOverlay(img_IDW_Git1_0,
+                                              img_bounds_IDW_Git1_0,
+                                              {pane: 'pane_IDW_Git1_0'});
+        bounds_group.addLayer(layer_IDW_Git1_0);
+        map.addLayer(layer_IDW_Git1_0);
+        function pop_PhngHaLi_1(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">OBJECTID</th>\
+                        <td class="visible-with-data" id="OBJECTID">' + (feature.properties['OBJECTID'] !== null ? autolinker.link(String(feature.properties['OBJECTID']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">tenTinh</th>\
+                        <td class="visible-with-data" id="tenTinh">' + (feature.properties['tenTinh'] !== null ? autolinker.link(String(feature.properties['tenTinh']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">maTinh</th>\
+                        <td class="visible-with-data" id="maTinh">' + (feature.properties['maTinh'] !== null ? autolinker.link(String(feature.properties['maTinh']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">maTinh_BNV</th>\
+                        <td class="visible-with-data" id="maTinh_BNV">' + (feature.properties['maTinh_BNV'] !== null ? autolinker.link(String(feature.properties['maTinh_BNV']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">tenXa</th>\
+                        <td class="visible-with-data" id="tenXa">' + (feature.properties['tenXa'] !== null ? autolinker.link(String(feature.properties['tenXa']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">maXa</th>\
+                        <td class="visible-with-data" id="maXa">' + (feature.properties['maXa'] !== null ? autolinker.link(String(feature.properties['maXa']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">maXa_BNV</th>\
+                        <td class="visible-with-data" id="maXa_BNV">' + (feature.properties['maXa_BNV'] !== null ? autolinker.link(String(feature.properties['maXa_BNV']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">danSo</th>\
+                        <td class="visible-with-data" id="danSo">' + (feature.properties['danSo'] !== null ? autolinker.link(String(feature.properties['danSo']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">dienTich</th>\
+                        <td class="visible-with-data" id="dienTich">' + (feature.properties['dienTich'] !== null ? autolinker.link(String(feature.properties['dienTich']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">nghiQuyet</th>\
+                        <td class="visible-with-data" id="nghiQuyet">' + (feature.properties['nghiQuyet'] !== null ? autolinker.link(String(feature.properties['nghiQuyet']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">ghiChu</th>\
+                        <td class="visible-with-data" id="ghiChu">' + (feature.properties['ghiChu'] !== null ? autolinker.link(String(feature.properties['ghiChu']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">SHAPE_Leng</th>\
+                        <td class="visible-with-data" id="SHAPE_Leng">' + (feature.properties['SHAPE_Leng'] !== null ? autolinker.link(String(feature.properties['SHAPE_Leng']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">SHAPE_Area</th>\
+                        <td class="visible-with-data" id="SHAPE_Area">' + (feature.properties['SHAPE_Area'] !== null ? autolinker.link(String(feature.properties['SHAPE_Area']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_PhngHaLi_1_0() {
+            return {
+                pane: 'pane_PhngHaLi_1',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fillOpacity: 0,
+                interactive: false,
+            }
+        }
+        map.createPane('pane_PhngHaLi_1');
+        map.getPane('pane_PhngHaLi_1').style.zIndex = 401;
+        map.getPane('pane_PhngHaLi_1').style['mix-blend-mode'] = 'normal';
+        var layer_PhngHaLi_1 = new L.geoJson(json_PhngHaLi_1, {
+            attribution: '',
+            interactive: false,
+            dataVar: 'json_PhngHaLi_1',
+            layerName: 'layer_PhngHaLi_1',
+            pane: 'pane_PhngHaLi_1',
+            onEachFeature: pop_PhngHaLi_1,
+            style: style_PhngHaLi_1_0,
+        });
+        bounds_group.addLayer(layer_PhngHaLi_1);
+        map.addLayer(layer_PhngHaLi_1);
+        function pop_Vtr4T150mn200m_2(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">id</th>\
+                        <td class="visible-with-data" id="id">' + (feature.properties['id'] !== null ? autolinker.link(String(feature.properties['id']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_Vtr4T150mn200m_2_0() {
+            return {
+                pane: 'pane_Vtr4T150mn200m_2',
+                opacity: 1,
+                color: 'rgba(238,106,11,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fillOpacity: 0,
+                interactive: false,
+            }
+        }
+        map.createPane('pane_Vtr4T150mn200m_2');
+        map.getPane('pane_Vtr4T150mn200m_2').style.zIndex = 402;
+        map.getPane('pane_Vtr4T150mn200m_2').style['mix-blend-mode'] = 'normal';
+        var layer_Vtr4T150mn200m_2 = new L.geoJson(json_Vtr4T150mn200m_2, {
+            attribution: '',
+            interactive: false,
+            dataVar: 'json_Vtr4T150mn200m_2',
+            layerName: 'layer_Vtr4T150mn200m_2',
+            pane: 'pane_Vtr4T150mn200m_2',
+            onEachFeature: pop_Vtr4T150mn200m_2,
+            style: style_Vtr4T150mn200m_2_0,
+        });
+        bounds_group.addLayer(layer_Vtr4T150mn200m_2);
+        map.addLayer(layer_Vtr4T150mn200m_2);
+        function pop_Vtr3T100mn150m_3(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">OBJECTID</th>\
+                        <td class="visible-with-data" id="OBJECTID">' + (feature.properties['OBJECTID'] !== null ? autolinker.link(String(feature.properties['OBJECTID']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">tenTinh</th>\
+                        <td class="visible-with-data" id="tenTinh">' + (feature.properties['tenTinh'] !== null ? autolinker.link(String(feature.properties['tenTinh']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">maTinh</th>\
+                        <td class="visible-with-data" id="maTinh">' + (feature.properties['maTinh'] !== null ? autolinker.link(String(feature.properties['maTinh']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">maTinh_BNV</th>\
+                        <td class="visible-with-data" id="maTinh_BNV">' + (feature.properties['maTinh_BNV'] !== null ? autolinker.link(String(feature.properties['maTinh_BNV']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">tenXa</th>\
+                        <td class="visible-with-data" id="tenXa">' + (feature.properties['tenXa'] !== null ? autolinker.link(String(feature.properties['tenXa']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">maXa</th>\
+                        <td class="visible-with-data" id="maXa">' + (feature.properties['maXa'] !== null ? autolinker.link(String(feature.properties['maXa']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">maXa_BNV</th>\
+                        <td class="visible-with-data" id="maXa_BNV">' + (feature.properties['maXa_BNV'] !== null ? autolinker.link(String(feature.properties['maXa_BNV']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">danSo</th>\
+                        <td class="visible-with-data" id="danSo">' + (feature.properties['danSo'] !== null ? autolinker.link(String(feature.properties['danSo']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">dienTich</th>\
+                        <td class="visible-with-data" id="dienTich">' + (feature.properties['dienTich'] !== null ? autolinker.link(String(feature.properties['dienTich']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">nghiQuyet</th>\
+                        <td class="visible-with-data" id="nghiQuyet">' + (feature.properties['nghiQuyet'] !== null ? autolinker.link(String(feature.properties['nghiQuyet']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">ghiChu</th>\
+                        <td class="visible-with-data" id="ghiChu">' + (feature.properties['ghiChu'] !== null ? autolinker.link(String(feature.properties['ghiChu']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">SHAPE_Leng</th>\
+                        <td class="visible-with-data" id="SHAPE_Leng">' + (feature.properties['SHAPE_Leng'] !== null ? autolinker.link(String(feature.properties['SHAPE_Leng']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">SHAPE_Area</th>\
+                        <td class="visible-with-data" id="SHAPE_Area">' + (feature.properties['SHAPE_Area'] !== null ? autolinker.link(String(feature.properties['SHAPE_Area']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_Vtr3T100mn150m_3_0() {
+            return {
+                pane: 'pane_Vtr3T100mn150m_3',
+                opacity: 1,
+                color: 'rgba(41,121,185,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fillOpacity: 0,
+                interactive: false,
+            }
+        }
+        map.createPane('pane_Vtr3T100mn150m_3');
+        map.getPane('pane_Vtr3T100mn150m_3').style.zIndex = 403;
+        map.getPane('pane_Vtr3T100mn150m_3').style['mix-blend-mode'] = 'normal';
+        var layer_Vtr3T100mn150m_3 = new L.geoJson(json_Vtr3T100mn150m_3, {
+            attribution: '',
+            interactive: false,
+            dataVar: 'json_Vtr3T100mn150m_3',
+            layerName: 'layer_Vtr3T100mn150m_3',
+            pane: 'pane_Vtr3T100mn150m_3',
+            onEachFeature: pop_Vtr3T100mn150m_3,
+            style: style_Vtr3T100mn150m_3_0,
+        });
+        bounds_group.addLayer(layer_Vtr3T100mn150m_3);
+        map.addLayer(layer_Vtr3T100mn150m_3);
+        function pop_Vtr2T50mn150m_4(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">id</th>\
+                        <td class="visible-with-data" id="id">' + (feature.properties['id'] !== null ? autolinker.link(String(feature.properties['id']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_Vtr2T50mn150m_4_0() {
+            return {
+                pane: 'pane_Vtr2T50mn150m_4',
+                opacity: 1,
+                color: 'rgba(174,210,14,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fillOpacity: 0,
+                interactive: false,
+            }
+        }
+        map.createPane('pane_Vtr2T50mn150m_4');
+        map.getPane('pane_Vtr2T50mn150m_4').style.zIndex = 404;
+        map.getPane('pane_Vtr2T50mn150m_4').style['mix-blend-mode'] = 'normal';
+        var layer_Vtr2T50mn150m_4 = new L.geoJson(json_Vtr2T50mn150m_4, {
+            attribution: '',
+            interactive: false,
+            dataVar: 'json_Vtr2T50mn150m_4',
+            layerName: 'layer_Vtr2T50mn150m_4',
+            pane: 'pane_Vtr2T50mn150m_4',
+            onEachFeature: pop_Vtr2T50mn150m_4,
+            style: style_Vtr2T50mn150m_4_0,
+        });
+        bounds_group.addLayer(layer_Vtr2T50mn150m_4);
+        map.addLayer(layer_Vtr2T50mn150m_4);
+        function pop_Vtr1TtuynngVnhai4n50m_5(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">id</th>\
+                        <td class="visible-with-data" id="id">' + (feature.properties['id'] !== null ? autolinker.link(String(feature.properties['id']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_Vtr1TtuynngVnhai4n50m_5_0() {
+            return {
+                pane: 'pane_Vtr1TtuynngVnhai4n50m_5',
+                opacity: 1,
+                color: 'rgba(199,13,140,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fillOpacity: 0,
+                interactive: false,
+            }
+        }
+        map.createPane('pane_Vtr1TtuynngVnhai4n50m_5');
+        map.getPane('pane_Vtr1TtuynngVnhai4n50m_5').style.zIndex = 405;
+        map.getPane('pane_Vtr1TtuynngVnhai4n50m_5').style['mix-blend-mode'] = 'normal';
+        var layer_Vtr1TtuynngVnhai4n50m_5 = new L.geoJson(json_Vtr1TtuynngVnhai4n50m_5, {
+            attribution: '',
+            interactive: false,
+            dataVar: 'json_Vtr1TtuynngVnhai4n50m_5',
+            layerName: 'layer_Vtr1TtuynngVnhai4n50m_5',
+            pane: 'pane_Vtr1TtuynngVnhai4n50m_5',
+            onEachFeature: pop_Vtr1TtuynngVnhai4n50m_5,
+            style: style_Vtr1TtuynngVnhai4n50m_5_0,
+        });
+        bounds_group.addLayer(layer_Vtr1TtuynngVnhai4n50m_5);
+        map.addLayer(layer_Vtr1TtuynngVnhai4n50m_5);
+        function pop_Tuynngchnh_6(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">id</th>\
+                        <td class="visible-with-data" id="id">' + (feature.properties['id'] !== null ? autolinker.link(String(feature.properties['id']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">layer</th>\
+                        <td class="visible-with-data" id="layer">' + (feature.properties['layer'] !== null ? autolinker.link(String(feature.properties['layer']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">path</th>\
+                        <td class="visible-with-data" id="path">' + (feature.properties['path'] !== null ? autolinker.link(String(feature.properties['path']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_Tuynngchnh_6_0() {
+            return {
+                pane: 'pane_Tuynngchnh_6',
+                opacity: 1,
+                color: 'rgba(146,93,208,1.0)',
+                dashArray: '',
+                lineCap: 'square',
+                lineJoin: 'bevel',
+                weight: 1.0,
+                fillOpacity: 0,
+                interactive: false,
+            }
+        }
+        map.createPane('pane_Tuynngchnh_6');
+        map.getPane('pane_Tuynngchnh_6').style.zIndex = 406;
+        map.getPane('pane_Tuynngchnh_6').style['mix-blend-mode'] = 'normal';
+        var layer_Tuynngchnh_6 = new L.geoJson(json_Tuynngchnh_6, {
+            attribution: '',
+            interactive: false,
+            dataVar: 'json_Tuynngchnh_6',
+            layerName: 'layer_Tuynngchnh_6',
+            pane: 'pane_Tuynngchnh_6',
+            onEachFeature: pop_Tuynngchnh_6,
+            style: style_Tuynngchnh_6_0,
+        });
+        bounds_group.addLayer(layer_Tuynngchnh_6);
+        map.addLayer(layer_Tuynngchnh_6);
+        function pop_Tuynngvnhai4_7(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['id'] !== null ? autolinker.link(String(feature.properties['id']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Ten'] !== null ? autolinker.link(String(feature.properties['Ten']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_Tuynngvnhai4_7_0() {
+            return {
+                pane: 'pane_Tuynngvnhai4_7',
+                opacity: 1,
+                color: 'rgba(168,15,41,1.0)',
+                dashArray: '',
+                lineCap: 'square',
+                lineJoin: 'bevel',
+                weight: 1.0,
+                fillOpacity: 0,
+                interactive: false,
+            }
+        }
+        map.createPane('pane_Tuynngvnhai4_7');
+        map.getPane('pane_Tuynngvnhai4_7').style.zIndex = 407;
+        map.getPane('pane_Tuynngvnhai4_7').style['mix-blend-mode'] = 'normal';
+        var layer_Tuynngvnhai4_7 = new L.geoJson(json_Tuynngvnhai4_7, {
+            attribution: '',
+            interactive: false,
+            dataVar: 'json_Tuynngvnhai4_7',
+            layerName: 'layer_Tuynngvnhai4_7',
+            pane: 'pane_Tuynngvnhai4_7',
+            onEachFeature: pop_Tuynngvnhai4_7,
+            style: style_Tuynngvnhai4_7_0,
+        });
+        bounds_group.addLayer(layer_Tuynngvnhai4_7);
+        map.addLayer(layer_Tuynngvnhai4_7);
+        function pop_Nicp_8(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Số TT'] !== null ? autolinker.link(String(feature.properties['Số TT']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Mã số'] !== null ? autolinker.link(String(feature.properties['Mã số']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Họ và tên'] !== null ? autolinker.link(String(feature.properties['Họ và tên']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Địa chỉ'] !== null ? autolinker.link(String(feature.properties['Địa chỉ']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Bồi thường, hỗ trợ về đất'] !== null ? autolinker.link(String(feature.properties['Bồi thường, hỗ trợ về đất']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Diện tích thu hồi'] !== null ? autolinker.link(String(feature.properties['Diện tích thu hồi']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Tổng'] !== null ? autolinker.link(String(feature.properties['Tổng']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Số tờ bản đồ'] !== null ? autolinker.link(String(feature.properties['Số tờ bản đồ']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Số thửa'] !== null ? autolinker.link(String(feature.properties['Số thửa']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Tọa độ X'] !== null ? autolinker.link(String(feature.properties['Tọa độ X']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Tọa độ Y'] !== null ? autolinker.link(String(feature.properties['Tọa độ Y']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['X'] !== null ? autolinker.link(String(feature.properties['X']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['y'] !== null ? autolinker.link(String(feature.properties['y']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Bồi thường. hỗ trợ công trình xây dựng'] !== null ? autolinker.link(String(feature.properties['Bồi thường. hỗ trợ công trình xây dựng']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Bồi thường công trình phụ. vật kiến trúc'] !== null ? autolinker.link(String(feature.properties['Bồi thường công trình phụ. vật kiến trúc']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Bồi thường cây trồng'] !== null ? autolinker.link(String(feature.properties['Bồi thường cây trồng']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Di chuyển mồ mả'] !== null ? autolinker.link(String(feature.properties['Di chuyển mồ mả']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Tổng cộng'] !== null ? autolinker.link(String(feature.properties['Tổng cộng']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Số GCNQSDĐ'] !== null ? autolinker.link(String(feature.properties['Số GCNQSDĐ']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Ngày. tháng. năm cấp'] !== null ? autolinker.link(String(feature.properties['Ngày. tháng. năm cấp']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Nơi cấp'] !== null ? autolinker.link(String(feature.properties['Nơi cấp']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_Nicp_8_0() {
+            return {
+                pane: 'pane_Nicp_8',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,255,255,1.0)',
+                interactive: false,
+            }
+        }
+        map.createPane('pane_Nicp_8');
+        map.getPane('pane_Nicp_8').style.zIndex = 408;
+        map.getPane('pane_Nicp_8').style['mix-blend-mode'] = 'normal';
+        var layer_Nicp_8 = new L.geoJson(json_Nicp_8, {
+            attribution: '',
+            interactive: false,
+            dataVar: 'json_Nicp_8',
+            layerName: 'layer_Nicp_8',
+            pane: 'pane_Nicp_8',
+            onEachFeature: pop_Nicp_8,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_Nicp_8_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_Nicp_8);
+        map.addLayer(layer_Nicp_8);
+        function pop_Dintchthuhi_9(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Số TT'] !== null ? autolinker.link(String(feature.properties['Số TT']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Mã số'] !== null ? autolinker.link(String(feature.properties['Mã số']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Họ và tên'] !== null ? autolinker.link(String(feature.properties['Họ và tên']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Địa chỉ'] !== null ? autolinker.link(String(feature.properties['Địa chỉ']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Bồi thường, hỗ trợ về đất'] !== null ? autolinker.link(String(feature.properties['Bồi thường, hỗ trợ về đất']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Diện tích thu hồi'] !== null ? autolinker.link(String(feature.properties['Diện tích thu hồi']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Tổng'] !== null ? autolinker.link(String(feature.properties['Tổng']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Số tờ bản đồ'] !== null ? autolinker.link(String(feature.properties['Số tờ bản đồ']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Số thửa'] !== null ? autolinker.link(String(feature.properties['Số thửa']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Tọa độ X'] !== null ? autolinker.link(String(feature.properties['Tọa độ X']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Tọa độ Y'] !== null ? autolinker.link(String(feature.properties['Tọa độ Y']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['X'] !== null ? autolinker.link(String(feature.properties['X']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['y'] !== null ? autolinker.link(String(feature.properties['y']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Bồi thường. hỗ trợ công trình xây dựng'] !== null ? autolinker.link(String(feature.properties['Bồi thường. hỗ trợ công trình xây dựng']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Bồi thường công trình phụ. vật kiến trúc'] !== null ? autolinker.link(String(feature.properties['Bồi thường công trình phụ. vật kiến trúc']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Bồi thường cây trồng'] !== null ? autolinker.link(String(feature.properties['Bồi thường cây trồng']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Di chuyển mồ mả'] !== null ? autolinker.link(String(feature.properties['Di chuyển mồ mả']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Tổng cộng'] !== null ? autolinker.link(String(feature.properties['Tổng cộng']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Số GCNQSDĐ'] !== null ? autolinker.link(String(feature.properties['Số GCNQSDĐ']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Ngày. tháng. năm cấp'] !== null ? autolinker.link(String(feature.properties['Ngày. tháng. năm cấp']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Nơi cấp'] !== null ? autolinker.link(String(feature.properties['Nơi cấp']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_Dintchthuhi_9_0() {
+            return {
+                pane: 'pane_Dintchthuhi_9',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,255,255,1.0)',
+                interactive: false,
+            }
+        }
+        map.createPane('pane_Dintchthuhi_9');
+        map.getPane('pane_Dintchthuhi_9').style.zIndex = 409;
+        map.getPane('pane_Dintchthuhi_9').style['mix-blend-mode'] = 'normal';
+        var layer_Dintchthuhi_9 = new L.geoJson(json_Dintchthuhi_9, {
+            attribution: '',
+            interactive: false,
+            dataVar: 'json_Dintchthuhi_9',
+            layerName: 'layer_Dintchthuhi_9',
+            pane: 'pane_Dintchthuhi_9',
+            onEachFeature: pop_Dintchthuhi_9,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_Dintchthuhi_9_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_Dintchthuhi_9);
+        map.addLayer(layer_Dintchthuhi_9);
+        function pop_Stbn_10(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Số TT'] !== null ? autolinker.link(String(feature.properties['Số TT']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Mã số'] !== null ? autolinker.link(String(feature.properties['Mã số']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Họ và tên'] !== null ? autolinker.link(String(feature.properties['Họ và tên']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Địa chỉ'] !== null ? autolinker.link(String(feature.properties['Địa chỉ']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Bồi thường, hỗ trợ về đất'] !== null ? autolinker.link(String(feature.properties['Bồi thường, hỗ trợ về đất']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Diện tích thu hồi'] !== null ? autolinker.link(String(feature.properties['Diện tích thu hồi']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Tổng'] !== null ? autolinker.link(String(feature.properties['Tổng']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Số tờ bản đồ'] !== null ? autolinker.link(String(feature.properties['Số tờ bản đồ']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Số thửa'] !== null ? autolinker.link(String(feature.properties['Số thửa']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Tọa độ X'] !== null ? autolinker.link(String(feature.properties['Tọa độ X']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Tọa độ Y'] !== null ? autolinker.link(String(feature.properties['Tọa độ Y']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['X'] !== null ? autolinker.link(String(feature.properties['X']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['y'] !== null ? autolinker.link(String(feature.properties['y']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Bồi thường. hỗ trợ công trình xây dựng'] !== null ? autolinker.link(String(feature.properties['Bồi thường. hỗ trợ công trình xây dựng']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Bồi thường công trình phụ. vật kiến trúc'] !== null ? autolinker.link(String(feature.properties['Bồi thường công trình phụ. vật kiến trúc']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Bồi thường cây trồng'] !== null ? autolinker.link(String(feature.properties['Bồi thường cây trồng']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Di chuyển mồ mả'] !== null ? autolinker.link(String(feature.properties['Di chuyển mồ mả']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Tổng cộng'] !== null ? autolinker.link(String(feature.properties['Tổng cộng']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Số GCNQSDĐ'] !== null ? autolinker.link(String(feature.properties['Số GCNQSDĐ']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Ngày. tháng. năm cấp'] !== null ? autolinker.link(String(feature.properties['Ngày. tháng. năm cấp']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Nơi cấp'] !== null ? autolinker.link(String(feature.properties['Nơi cấp']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_Stbn_10_0() {
+            return {
+                pane: 'pane_Stbn_10',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,255,255,1.0)',
+                interactive: false,
+            }
+        }
+        map.createPane('pane_Stbn_10');
+        map.getPane('pane_Stbn_10').style.zIndex = 410;
+        map.getPane('pane_Stbn_10').style['mix-blend-mode'] = 'normal';
+        var layer_Stbn_10 = new L.geoJson(json_Stbn_10, {
+            attribution: '',
+            interactive: false,
+            dataVar: 'json_Stbn_10',
+            layerName: 'layer_Stbn_10',
+            pane: 'pane_Stbn_10',
+            onEachFeature: pop_Stbn_10,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_Stbn_10_0(feature));
+            },
+        });
+        var cluster_Stbn_10 = new L.MarkerClusterGroup({showCoverageOnHover: false,
+            spiderfyDistanceMultiplier: 2});
+        cluster_Stbn_10.addLayer(layer_Stbn_10);
+
+        bounds_group.addLayer(layer_Stbn_10);
+        cluster_Stbn_10.addTo(map);
+        function pop_Stha_11(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Số TT'] !== null ? autolinker.link(String(feature.properties['Số TT']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Mã số'] !== null ? autolinker.link(String(feature.properties['Mã số']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Họ và tên'] !== null ? autolinker.link(String(feature.properties['Họ và tên']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Địa chỉ'] !== null ? autolinker.link(String(feature.properties['Địa chỉ']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Bồi thường, hỗ trợ về đất'] !== null ? autolinker.link(String(feature.properties['Bồi thường, hỗ trợ về đất']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Diện tích thu hồi'] !== null ? autolinker.link(String(feature.properties['Diện tích thu hồi']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Tổng'] !== null ? autolinker.link(String(feature.properties['Tổng']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Số tờ bản đồ'] !== null ? autolinker.link(String(feature.properties['Số tờ bản đồ']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Số thửa'] !== null ? autolinker.link(String(feature.properties['Số thửa']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Tọa độ X'] !== null ? autolinker.link(String(feature.properties['Tọa độ X']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Tọa độ Y'] !== null ? autolinker.link(String(feature.properties['Tọa độ Y']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['X'] !== null ? autolinker.link(String(feature.properties['X']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['y'] !== null ? autolinker.link(String(feature.properties['y']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Bồi thường. hỗ trợ công trình xây dựng'] !== null ? autolinker.link(String(feature.properties['Bồi thường. hỗ trợ công trình xây dựng']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Bồi thường công trình phụ. vật kiến trúc'] !== null ? autolinker.link(String(feature.properties['Bồi thường công trình phụ. vật kiến trúc']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Bồi thường cây trồng'] !== null ? autolinker.link(String(feature.properties['Bồi thường cây trồng']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Di chuyển mồ mả'] !== null ? autolinker.link(String(feature.properties['Di chuyển mồ mả']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Tổng cộng'] !== null ? autolinker.link(String(feature.properties['Tổng cộng']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Số GCNQSDĐ'] !== null ? autolinker.link(String(feature.properties['Số GCNQSDĐ']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Ngày. tháng. năm cấp'] !== null ? autolinker.link(String(feature.properties['Ngày. tháng. năm cấp']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Nơi cấp'] !== null ? autolinker.link(String(feature.properties['Nơi cấp']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_Stha_11_0() {
+            return {
+                pane: 'pane_Stha_11',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,255,255,1.0)',
+                interactive: false,
+            }
+        }
+        map.createPane('pane_Stha_11');
+        map.getPane('pane_Stha_11').style.zIndex = 411;
+        map.getPane('pane_Stha_11').style['mix-blend-mode'] = 'normal';
+        var layer_Stha_11 = new L.geoJson(json_Stha_11, {
+            attribution: '',
+            interactive: false,
+            dataVar: 'json_Stha_11',
+            layerName: 'layer_Stha_11',
+            pane: 'pane_Stha_11',
+            onEachFeature: pop_Stha_11,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_Stha_11_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_Stha_11);
+        map.addLayer(layer_Stha_11);
+        function pop_Bithnghtrvcngtrnhxydng_12(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Số TT'] !== null ? autolinker.link(String(feature.properties['Số TT']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Mã số</th>\
+                        <td>' + (feature.properties['Mã số'] !== null ? autolinker.link(String(feature.properties['Mã số']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Họ và tên'] !== null ? autolinker.link(String(feature.properties['Họ và tên']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Địa chỉ'] !== null ? autolinker.link(String(feature.properties['Địa chỉ']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Bồi thường, hỗ trợ về đất'] !== null ? autolinker.link(String(feature.properties['Bồi thường, hỗ trợ về đất']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Diện tích thu hồi'] !== null ? autolinker.link(String(feature.properties['Diện tích thu hồi']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Tổng'] !== null ? autolinker.link(String(feature.properties['Tổng']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Số tờ bản đồ'] !== null ? autolinker.link(String(feature.properties['Số tờ bản đồ']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Số thửa'] !== null ? autolinker.link(String(feature.properties['Số thửa']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Tọa độ X'] !== null ? autolinker.link(String(feature.properties['Tọa độ X']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Tọa độ Y'] !== null ? autolinker.link(String(feature.properties['Tọa độ Y']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['X'] !== null ? autolinker.link(String(feature.properties['X']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['y'] !== null ? autolinker.link(String(feature.properties['y']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Bồi thường. hỗ trợ công trình xây dựng'] !== null ? autolinker.link(String(feature.properties['Bồi thường. hỗ trợ công trình xây dựng']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Bồi thường công trình phụ. vật kiến trúc'] !== null ? autolinker.link(String(feature.properties['Bồi thường công trình phụ. vật kiến trúc']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Bồi thường cây trồng'] !== null ? autolinker.link(String(feature.properties['Bồi thường cây trồng']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Di chuyển mồ mả'] !== null ? autolinker.link(String(feature.properties['Di chuyển mồ mả']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Tổng cộng'] !== null ? autolinker.link(String(feature.properties['Tổng cộng']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Số GCNQSDĐ'] !== null ? autolinker.link(String(feature.properties['Số GCNQSDĐ']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Ngày. tháng. năm cấp'] !== null ? autolinker.link(String(feature.properties['Ngày. tháng. năm cấp']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Nơi cấp'] !== null ? autolinker.link(String(feature.properties['Nơi cấp']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_Bithnghtrvcngtrnhxydng_12_0() {
+            return {
+                pane: 'pane_Bithnghtrvcngtrnhxydng_12',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,255,255,1.0)',
+                interactive: false,
+            }
+        }
+        map.createPane('pane_Bithnghtrvcngtrnhxydng_12');
+        map.getPane('pane_Bithnghtrvcngtrnhxydng_12').style.zIndex = 412;
+        map.getPane('pane_Bithnghtrvcngtrnhxydng_12').style['mix-blend-mode'] = 'normal';
+        var layer_Bithnghtrvcngtrnhxydng_12 = new L.geoJson(json_Bithnghtrvcngtrnhxydng_12, {
+            attribution: '',
+            interactive: false,
+            dataVar: 'json_Bithnghtrvcngtrnhxydng_12',
+            layerName: 'layer_Bithnghtrvcngtrnhxydng_12',
+            pane: 'pane_Bithnghtrvcngtrnhxydng_12',
+            onEachFeature: pop_Bithnghtrvcngtrnhxydng_12,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_Bithnghtrvcngtrnhxydng_12_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_Bithnghtrvcngtrnhxydng_12);
+        map.addLayer(layer_Bithnghtrvcngtrnhxydng_12);
+        function pop_Bithngcytrng_13(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Số TT'] !== null ? autolinker.link(String(feature.properties['Số TT']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Mã số'] !== null ? autolinker.link(String(feature.properties['Mã số']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Họ và tên'] !== null ? autolinker.link(String(feature.properties['Họ và tên']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Địa chỉ'] !== null ? autolinker.link(String(feature.properties['Địa chỉ']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Bồi thường, hỗ trợ về đất'] !== null ? autolinker.link(String(feature.properties['Bồi thường, hỗ trợ về đất']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Diện tích thu hồi'] !== null ? autolinker.link(String(feature.properties['Diện tích thu hồi']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Tổng'] !== null ? autolinker.link(String(feature.properties['Tổng']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Số tờ bản đồ'] !== null ? autolinker.link(String(feature.properties['Số tờ bản đồ']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Số thửa'] !== null ? autolinker.link(String(feature.properties['Số thửa']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Tọa độ X'] !== null ? autolinker.link(String(feature.properties['Tọa độ X']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Tọa độ Y'] !== null ? autolinker.link(String(feature.properties['Tọa độ Y']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['X'] !== null ? autolinker.link(String(feature.properties['X']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['y'] !== null ? autolinker.link(String(feature.properties['y']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Bồi thường. hỗ trợ công trình xây dựng'] !== null ? autolinker.link(String(feature.properties['Bồi thường. hỗ trợ công trình xây dựng']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Bồi thường công trình phụ. vật kiến trúc'] !== null ? autolinker.link(String(feature.properties['Bồi thường công trình phụ. vật kiến trúc']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Bồi thường cây trồng'] !== null ? autolinker.link(String(feature.properties['Bồi thường cây trồng']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Di chuyển mồ mả'] !== null ? autolinker.link(String(feature.properties['Di chuyển mồ mả']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Tổng cộng'] !== null ? autolinker.link(String(feature.properties['Tổng cộng']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Số GCNQSDĐ'] !== null ? autolinker.link(String(feature.properties['Số GCNQSDĐ']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Ngày. tháng. năm cấp'] !== null ? autolinker.link(String(feature.properties['Ngày. tháng. năm cấp']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Nơi cấp'] !== null ? autolinker.link(String(feature.properties['Nơi cấp']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_Bithngcytrng_13_0() {
+            return {
+                pane: 'pane_Bithngcytrng_13',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,255,255,1.0)',
+                interactive: false,
+            }
+        }
+        map.createPane('pane_Bithngcytrng_13');
+        map.getPane('pane_Bithngcytrng_13').style.zIndex = 413;
+        map.getPane('pane_Bithngcytrng_13').style['mix-blend-mode'] = 'normal';
+        var layer_Bithngcytrng_13 = new L.geoJson(json_Bithngcytrng_13, {
+            attribution: '',
+            interactive: false,
+            dataVar: 'json_Bithngcytrng_13',
+            layerName: 'layer_Bithngcytrng_13',
+            pane: 'pane_Bithngcytrng_13',
+            onEachFeature: pop_Bithngcytrng_13,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_Bithngcytrng_13_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_Bithngcytrng_13);
+        map.addLayer(layer_Bithngcytrng_13);
+        function pop_Bithngvtdngphkintrc_14(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Số TT'] !== null ? autolinker.link(String(feature.properties['Số TT']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Mã số'] !== null ? autolinker.link(String(feature.properties['Mã số']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Họ và tên'] !== null ? autolinker.link(String(feature.properties['Họ và tên']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Địa chỉ'] !== null ? autolinker.link(String(feature.properties['Địa chỉ']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Bồi thường, hỗ trợ về đất'] !== null ? autolinker.link(String(feature.properties['Bồi thường, hỗ trợ về đất']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Diện tích thu hồi'] !== null ? autolinker.link(String(feature.properties['Diện tích thu hồi']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Tổng'] !== null ? autolinker.link(String(feature.properties['Tổng']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Số tờ bản đồ'] !== null ? autolinker.link(String(feature.properties['Số tờ bản đồ']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Số thửa'] !== null ? autolinker.link(String(feature.properties['Số thửa']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Tọa độ X'] !== null ? autolinker.link(String(feature.properties['Tọa độ X']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Tọa độ Y'] !== null ? autolinker.link(String(feature.properties['Tọa độ Y']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['X'] !== null ? autolinker.link(String(feature.properties['X']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['y'] !== null ? autolinker.link(String(feature.properties['y']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Bồi thường. hỗ trợ công trình xây dựng'] !== null ? autolinker.link(String(feature.properties['Bồi thường. hỗ trợ công trình xây dựng']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Bồi thường công trình phụ. vật kiến trúc'] !== null ? autolinker.link(String(feature.properties['Bồi thường công trình phụ. vật kiến trúc']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Bồi thường cây trồng'] !== null ? autolinker.link(String(feature.properties['Bồi thường cây trồng']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Di chuyển mồ mả'] !== null ? autolinker.link(String(feature.properties['Di chuyển mồ mả']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Tổng cộng'] !== null ? autolinker.link(String(feature.properties['Tổng cộng']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Số GCNQSDĐ'] !== null ? autolinker.link(String(feature.properties['Số GCNQSDĐ']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Ngày. tháng. năm cấp'] !== null ? autolinker.link(String(feature.properties['Ngày. tháng. năm cấp']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Nơi cấp'] !== null ? autolinker.link(String(feature.properties['Nơi cấp']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_Bithngvtdngphkintrc_14_0() {
+            return {
+                pane: 'pane_Bithngvtdngphkintrc_14',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,255,255,1.0)',
+                interactive: false,
+            }
+        }
+        map.createPane('pane_Bithngvtdngphkintrc_14');
+        map.getPane('pane_Bithngvtdngphkintrc_14').style.zIndex = 414;
+        map.getPane('pane_Bithngvtdngphkintrc_14').style['mix-blend-mode'] = 'normal';
+        var layer_Bithngvtdngphkintrc_14 = new L.geoJson(json_Bithngvtdngphkintrc_14, {
+            attribution: '',
+            interactive: false,
+            dataVar: 'json_Bithngvtdngphkintrc_14',
+            layerName: 'layer_Bithngvtdngphkintrc_14',
+            pane: 'pane_Bithngvtdngphkintrc_14',
+            onEachFeature: pop_Bithngvtdngphkintrc_14,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_Bithngvtdngphkintrc_14_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_Bithngvtdngphkintrc_14);
+        map.addLayer(layer_Bithngvtdngphkintrc_14);
+        function pop_Gitbithngvt_15(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">Số TT</th>\
+                        <td class="visible-with-data" id="Số TT">' + (feature.properties['Số TT'] !== null ? autolinker.link(String(feature.properties['Số TT']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Mã số</th>\
+                        <td class="visible-with-data" id="Mã số">' + (feature.properties['Mã số'] !== null ? autolinker.link(String(feature.properties['Mã số']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Họ và tên</th>\
+                        <td class="visible-with-data" id="Họ và tên">' + (feature.properties['Họ và tên'] !== null ? autolinker.link(String(feature.properties['Họ và tên']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Địa chỉ</th>\
+                        <td class="visible-with-data" id="Địa chỉ">' + (feature.properties['Địa chỉ'] !== null ? autolinker.link(String(feature.properties['Địa chỉ']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Bồi thường, hỗ trợ về đất</th>\
+                        <td class="visible-with-data" id="Bồi thường, hỗ trợ về đất">' + (feature.properties['Bồi thường, hỗ trợ về đất'] !== null ? autolinker.link(String(feature.properties['Bồi thường, hỗ trợ về đất']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Diện tích thu hồi</th>\
+                        <td class="visible-with-data" id="Diện tích thu hồi">' + (feature.properties['Diện tích thu hồi'] !== null ? autolinker.link(String(feature.properties['Diện tích thu hồi']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Tổng</th>\
+                        <td class="visible-with-data" id="Tổng">' + (feature.properties['Tổng'] !== null ? autolinker.link(String(feature.properties['Tổng']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Số tờ bản đồ</th>\
+                        <td class="visible-with-data" id="Số tờ bản đồ">' + (feature.properties['Số tờ bản đồ'] !== null ? autolinker.link(String(feature.properties['Số tờ bản đồ']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Số thửa</th>\
+                        <td class="visible-with-data" id="Số thửa">' + (feature.properties['Số thửa'] !== null ? autolinker.link(String(feature.properties['Số thửa']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Tọa độ X</th>\
+                        <td class="visible-with-data" id="Tọa độ X">' + (feature.properties['Tọa độ X'] !== null ? autolinker.link(String(feature.properties['Tọa độ X']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Tọa độ Y</th>\
+                        <td class="visible-with-data" id="Tọa độ Y">' + (feature.properties['Tọa độ Y'] !== null ? autolinker.link(String(feature.properties['Tọa độ Y']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">X</th>\
+                        <td class="visible-with-data" id="X">' + (feature.properties['X'] !== null ? autolinker.link(String(feature.properties['X']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">y</th>\
+                        <td class="visible-with-data" id="y">' + (feature.properties['y'] !== null ? autolinker.link(String(feature.properties['y']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Bồi thường. hỗ trợ công trình xây dựng</th>\
+                        <td class="visible-with-data" id="Bồi thường. hỗ trợ công trình xây dựng">' + (feature.properties['Bồi thường. hỗ trợ công trình xây dựng'] !== null ? autolinker.link(String(feature.properties['Bồi thường. hỗ trợ công trình xây dựng']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Bồi thường công trình phụ. vật kiến trúc</th>\
+                        <td class="visible-with-data" id="Bồi thường công trình phụ. vật kiến trúc">' + (feature.properties['Bồi thường công trình phụ. vật kiến trúc'] !== null ? autolinker.link(String(feature.properties['Bồi thường công trình phụ. vật kiến trúc']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Bồi thường cây trồng</th>\
+                        <td class="visible-with-data" id="Bồi thường cây trồng">' + (feature.properties['Bồi thường cây trồng'] !== null ? autolinker.link(String(feature.properties['Bồi thường cây trồng']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Di chuyển mồ mả</th>\
+                        <td class="visible-with-data" id="Di chuyển mồ mả">' + (feature.properties['Di chuyển mồ mả'] !== null ? autolinker.link(String(feature.properties['Di chuyển mồ mả']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Tổng cộng</th>\
+                        <td class="visible-with-data" id="Tổng cộng">' + (feature.properties['Tổng cộng'] !== null ? autolinker.link(String(feature.properties['Tổng cộng']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Số GCNQSDĐ</th>\
+                        <td class="visible-with-data" id="Số GCNQSDĐ">' + (feature.properties['Số GCNQSDĐ'] !== null ? autolinker.link(String(feature.properties['Số GCNQSDĐ']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Ngày. tháng. năm cấp</th>\
+                        <td class="visible-with-data" id="Ngày. tháng. năm cấp">' + (feature.properties['Ngày. tháng. năm cấp'] !== null ? autolinker.link(String(feature.properties['Ngày. tháng. năm cấp']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Nơi cấp</th>\
+                        <td class="visible-with-data" id="Nơi cấp">' + (feature.properties['Nơi cấp'] !== null ? autolinker.link(String(feature.properties['Nơi cấp']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_Gitbithngvt_15_0() {
+            return {
+                pane: 'pane_Gitbithngvt_15',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,255,255,1.0)',
+                interactive: false,
+            }
+        }
+        map.createPane('pane_Gitbithngvt_15');
+        map.getPane('pane_Gitbithngvt_15').style.zIndex = 415;
+        map.getPane('pane_Gitbithngvt_15').style['mix-blend-mode'] = 'normal';
+        var layer_Gitbithngvt_15 = new L.geoJson(json_Gitbithngvt_15, {
+            attribution: '',
+            interactive: false,
+            dataVar: 'json_Gitbithngvt_15',
+            layerName: 'layer_Gitbithngvt_15',
+            pane: 'pane_Gitbithngvt_15',
+            onEachFeature: pop_Gitbithngvt_15,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_Gitbithngvt_15_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_Gitbithngvt_15);
+        map.addLayer(layer_Gitbithngvt_15);
+        function pop_Tnggitttcccloi_16(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Số TT'] !== null ? autolinker.link(String(feature.properties['Số TT']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Mã số'] !== null ? autolinker.link(String(feature.properties['Mã số']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Họ và tên'] !== null ? autolinker.link(String(feature.properties['Họ và tên']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Địa chỉ'] !== null ? autolinker.link(String(feature.properties['Địa chỉ']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Bồi thường, hỗ trợ về đất'] !== null ? autolinker.link(String(feature.properties['Bồi thường, hỗ trợ về đất']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Diện tích thu hồi'] !== null ? autolinker.link(String(feature.properties['Diện tích thu hồi']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Tổng'] !== null ? autolinker.link(String(feature.properties['Tổng']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Số tờ bản đồ'] !== null ? autolinker.link(String(feature.properties['Số tờ bản đồ']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Số thửa'] !== null ? autolinker.link(String(feature.properties['Số thửa']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Tọa độ X'] !== null ? autolinker.link(String(feature.properties['Tọa độ X']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Tọa độ Y'] !== null ? autolinker.link(String(feature.properties['Tọa độ Y']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['X'] !== null ? autolinker.link(String(feature.properties['X']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['y'] !== null ? autolinker.link(String(feature.properties['y']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Bồi thường. hỗ trợ công trình xây dựng'] !== null ? autolinker.link(String(feature.properties['Bồi thường. hỗ trợ công trình xây dựng']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Bồi thường công trình phụ. vật kiến trúc'] !== null ? autolinker.link(String(feature.properties['Bồi thường công trình phụ. vật kiến trúc']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Bồi thường cây trồng'] !== null ? autolinker.link(String(feature.properties['Bồi thường cây trồng']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Di chuyển mồ mả'] !== null ? autolinker.link(String(feature.properties['Di chuyển mồ mả']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Tổng cộng'] !== null ? autolinker.link(String(feature.properties['Tổng cộng']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Số GCNQSDĐ'] !== null ? autolinker.link(String(feature.properties['Số GCNQSDĐ']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Ngày. tháng. năm cấp'] !== null ? autolinker.link(String(feature.properties['Ngày. tháng. năm cấp']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Nơi cấp'] !== null ? autolinker.link(String(feature.properties['Nơi cấp']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_Tnggitttcccloi_16_0() {
+            return {
+                pane: 'pane_Tnggitttcccloi_16',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,255,255,1.0)',
+                interactive: false,
+            }
+        }
+        map.createPane('pane_Tnggitttcccloi_16');
+        map.getPane('pane_Tnggitttcccloi_16').style.zIndex = 416;
+        map.getPane('pane_Tnggitttcccloi_16').style['mix-blend-mode'] = 'normal';
+        var layer_Tnggitttcccloi_16 = new L.geoJson(json_Tnggitttcccloi_16, {
+            attribution: '',
+            interactive: false,
+            dataVar: 'json_Tnggitttcccloi_16',
+            layerName: 'layer_Tnggitttcccloi_16',
+            pane: 'pane_Tnggitttcccloi_16',
+            onEachFeature: pop_Tnggitttcccloi_16,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_Tnggitttcccloi_16_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_Tnggitttcccloi_16);
+        map.addLayer(layer_Tnggitttcccloi_16);
+        function pop_SCNQSD_17(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Số TT'] !== null ? autolinker.link(String(feature.properties['Số TT']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Mã số'] !== null ? autolinker.link(String(feature.properties['Mã số']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Họ và tên'] !== null ? autolinker.link(String(feature.properties['Họ và tên']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Địa chỉ'] !== null ? autolinker.link(String(feature.properties['Địa chỉ']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Bồi thường, hỗ trợ về đất'] !== null ? autolinker.link(String(feature.properties['Bồi thường, hỗ trợ về đất']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Diện tích thu hồi'] !== null ? autolinker.link(String(feature.properties['Diện tích thu hồi']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Tổng'] !== null ? autolinker.link(String(feature.properties['Tổng']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Số tờ bản đồ'] !== null ? autolinker.link(String(feature.properties['Số tờ bản đồ']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Số thửa'] !== null ? autolinker.link(String(feature.properties['Số thửa']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Tọa độ X'] !== null ? autolinker.link(String(feature.properties['Tọa độ X']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Tọa độ Y'] !== null ? autolinker.link(String(feature.properties['Tọa độ Y']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['X'] !== null ? autolinker.link(String(feature.properties['X']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['y'] !== null ? autolinker.link(String(feature.properties['y']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Bồi thường. hỗ trợ công trình xây dựng'] !== null ? autolinker.link(String(feature.properties['Bồi thường. hỗ trợ công trình xây dựng']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Bồi thường công trình phụ. vật kiến trúc'] !== null ? autolinker.link(String(feature.properties['Bồi thường công trình phụ. vật kiến trúc']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Bồi thường cây trồng'] !== null ? autolinker.link(String(feature.properties['Bồi thường cây trồng']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Di chuyển mồ mả'] !== null ? autolinker.link(String(feature.properties['Di chuyển mồ mả']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Tổng cộng'] !== null ? autolinker.link(String(feature.properties['Tổng cộng']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Số GCNQSDĐ'] !== null ? autolinker.link(String(feature.properties['Số GCNQSDĐ']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Ngày. tháng. năm cấp'] !== null ? autolinker.link(String(feature.properties['Ngày. tháng. năm cấp']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Nơi cấp'] !== null ? autolinker.link(String(feature.properties['Nơi cấp']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_SCNQSD_17_0() {
+            return {
+                pane: 'pane_SCNQSD_17',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,255,255,1.0)',
+                interactive: false,
+            }
+        }
+        map.createPane('pane_SCNQSD_17');
+        map.getPane('pane_SCNQSD_17').style.zIndex = 417;
+        map.getPane('pane_SCNQSD_17').style['mix-blend-mode'] = 'normal';
+        var layer_SCNQSD_17 = new L.geoJson(json_SCNQSD_17, {
+            attribution: '',
+            interactive: false,
+            dataVar: 'json_SCNQSD_17',
+            layerName: 'layer_SCNQSD_17',
+            pane: 'pane_SCNQSD_17',
+            onEachFeature: pop_SCNQSD_17,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_SCNQSD_17_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_SCNQSD_17);
+        map.addLayer(layer_SCNQSD_17);
+        function pop_Ngythngnmcp_18(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">Số TT</th>\
+                        <td class="visible-with-data" id="Số TT">' + (feature.properties['Số TT'] !== null ? autolinker.link(String(feature.properties['Số TT']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Mã số'] !== null ? autolinker.link(String(feature.properties['Mã số']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Họ và tên</th>\
+                        <td class="visible-with-data" id="Họ và tên">' + (feature.properties['Họ và tên'] !== null ? autolinker.link(String(feature.properties['Họ và tên']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Địa chỉ'] !== null ? autolinker.link(String(feature.properties['Địa chỉ']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Bồi thường, hỗ trợ về đất'] !== null ? autolinker.link(String(feature.properties['Bồi thường, hỗ trợ về đất']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Diện tích thu hồi'] !== null ? autolinker.link(String(feature.properties['Diện tích thu hồi']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Tổng'] !== null ? autolinker.link(String(feature.properties['Tổng']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Số tờ bản đồ'] !== null ? autolinker.link(String(feature.properties['Số tờ bản đồ']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Số thửa'] !== null ? autolinker.link(String(feature.properties['Số thửa']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Tọa độ X'] !== null ? autolinker.link(String(feature.properties['Tọa độ X']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Tọa độ Y'] !== null ? autolinker.link(String(feature.properties['Tọa độ Y']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['X'] !== null ? autolinker.link(String(feature.properties['X']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['y'] !== null ? autolinker.link(String(feature.properties['y']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Bồi thường. hỗ trợ công trình xây dựng'] !== null ? autolinker.link(String(feature.properties['Bồi thường. hỗ trợ công trình xây dựng']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Bồi thường công trình phụ. vật kiến trúc'] !== null ? autolinker.link(String(feature.properties['Bồi thường công trình phụ. vật kiến trúc']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Bồi thường cây trồng'] !== null ? autolinker.link(String(feature.properties['Bồi thường cây trồng']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Di chuyển mồ mả'] !== null ? autolinker.link(String(feature.properties['Di chuyển mồ mả']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Tổng cộng'] !== null ? autolinker.link(String(feature.properties['Tổng cộng']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Số GCNQSDĐ'] !== null ? autolinker.link(String(feature.properties['Số GCNQSDĐ']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Ngày. tháng. năm cấp'] !== null ? autolinker.link(String(feature.properties['Ngày. tháng. năm cấp']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Nơi cấp'] !== null ? autolinker.link(String(feature.properties['Nơi cấp']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_Ngythngnmcp_18_0() {
+            return {
+                pane: 'pane_Ngythngnmcp_18',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,255,255,1.0)',
+                interactive: false,
+            }
+        }
+        map.createPane('pane_Ngythngnmcp_18');
+        map.getPane('pane_Ngythngnmcp_18').style.zIndex = 418;
+        map.getPane('pane_Ngythngnmcp_18').style['mix-blend-mode'] = 'normal';
+        var layer_Ngythngnmcp_18 = new L.geoJson(json_Ngythngnmcp_18, {
+            attribution: '',
+            interactive: false,
+            dataVar: 'json_Ngythngnmcp_18',
+            layerName: 'layer_Ngythngnmcp_18',
+            pane: 'pane_Ngythngnmcp_18',
+            onEachFeature: pop_Ngythngnmcp_18,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_Ngythngnmcp_18_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_Ngythngnmcp_18);
+        map.addLayer(layer_Ngythngnmcp_18);
+        function pop_Hvtn_19(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Số TT'] !== null ? autolinker.link(String(feature.properties['Số TT']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Mã số'] !== null ? autolinker.link(String(feature.properties['Mã số']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Họ và tên'] !== null ? autolinker.link(String(feature.properties['Họ và tên']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Địa chỉ'] !== null ? autolinker.link(String(feature.properties['Địa chỉ']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Bồi thường, hỗ trợ về đất'] !== null ? autolinker.link(String(feature.properties['Bồi thường, hỗ trợ về đất']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Diện tích thu hồi'] !== null ? autolinker.link(String(feature.properties['Diện tích thu hồi']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Tổng'] !== null ? autolinker.link(String(feature.properties['Tổng']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Số tờ bản đồ'] !== null ? autolinker.link(String(feature.properties['Số tờ bản đồ']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Số thửa'] !== null ? autolinker.link(String(feature.properties['Số thửa']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Tọa độ X'] !== null ? autolinker.link(String(feature.properties['Tọa độ X']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Tọa độ Y'] !== null ? autolinker.link(String(feature.properties['Tọa độ Y']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['X'] !== null ? autolinker.link(String(feature.properties['X']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['y'] !== null ? autolinker.link(String(feature.properties['y']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Bồi thường. hỗ trợ công trình xây dựng'] !== null ? autolinker.link(String(feature.properties['Bồi thường. hỗ trợ công trình xây dựng']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Bồi thường công trình phụ. vật kiến trúc'] !== null ? autolinker.link(String(feature.properties['Bồi thường công trình phụ. vật kiến trúc']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Bồi thường cây trồng'] !== null ? autolinker.link(String(feature.properties['Bồi thường cây trồng']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Di chuyển mồ mả'] !== null ? autolinker.link(String(feature.properties['Di chuyển mồ mả']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Tổng cộng'] !== null ? autolinker.link(String(feature.properties['Tổng cộng']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Số GCNQSDĐ'] !== null ? autolinker.link(String(feature.properties['Số GCNQSDĐ']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Ngày. tháng. năm cấp'] !== null ? autolinker.link(String(feature.properties['Ngày. tháng. năm cấp']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Nơi cấp'] !== null ? autolinker.link(String(feature.properties['Nơi cấp']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_Hvtn_19_0() {
+            return {
+                pane: 'pane_Hvtn_19',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,255,255,1.0)',
+                interactive: false,
+            }
+        }
+        map.createPane('pane_Hvtn_19');
+        map.getPane('pane_Hvtn_19').style.zIndex = 419;
+        map.getPane('pane_Hvtn_19').style['mix-blend-mode'] = 'normal';
+        var layer_Hvtn_19 = new L.geoJson(json_Hvtn_19, {
+            attribution: '',
+            interactive: false,
+            dataVar: 'json_Hvtn_19',
+            layerName: 'layer_Hvtn_19',
+            pane: 'pane_Hvtn_19',
+            onEachFeature: pop_Hvtn_19,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_Hvtn_19_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_Hvtn_19);
+        map.addLayer(layer_Hvtn_19);
+        const url = {"Nominatim OSM": "https://nominatim.openstreetmap.org/search?format=geojson&addressdetails=1&",
+        "France BAN": "https://api-adresse.data.gouv.fr/search/?"}
+        var photonControl = L.control.photon({
+            url: url["Nominatim OSM"],
+            feedbackLabel: '',
+            position: 'topleft',
+            includePosition: true,
+            initial: true,
+            // resultsHandler: myHandler,
+        }).addTo(map);
+        photonControl._container.childNodes[0].style.borderRadius="10px"
+        // Create a variable to store the geoJSON data
+        var x = null;
+        // Create a variable to store the marker
+        var marker = null;
+        // Add an event listener to the Photon control to create a marker from the returned geoJSON data
+        var z = null;
+        photonControl.on('selected', function(e) {
+            console.log(photonControl.search.resultsContainer);
+            if (x != null) {
+                map.removeLayer(obj3.marker);
+                map.removeLayer(x);
+            }
+            obj2.gcd = e.choice;
+            x = L.geoJSON(obj2.gcd).addTo(map);
+            var label = typeof obj2.gcd.properties.label === 'undefined' ? obj2.gcd.properties.display_name : obj2.gcd.properties.label;
+            obj3.marker = L.marker(x.getLayers()[0].getLatLng()).bindPopup(label).addTo(map);
+            map.setView(x.getLayers()[0].getLatLng(), 17);
+            z = typeof e.choice.properties.label === 'undefined'? e.choice.properties.display_name : e.choice.properties.label;
+            console.log(e);
+            e.target.input.value = z;
+        });
+        var search = document.getElementsByClassName("leaflet-photon leaflet-control")[0];
+        search.classList.add("leaflet-control-search")
+        search.style.display = "flex";
+        search.style.backgroundColor="rgba(255,255,255,0.5)" 
+
+        // Create the new button element
+        var button = document.createElement("div");
+        button.id = "gcd-button-control";
+        button.className = "gcd-gl-btn fa fa-search search-button";
+
+        // Insert the button at the beginning of the search control
+        search.insertBefore(button, search.firstChild);
+        last = search.lastChild;
+        last.style.display = "none";
+        button.addEventListener("click", function (e) {
+            if (last.style.display === "none") {
+                last.style.display = "block";
+            } else {
+                last.style.display = "none";
+            }
+        });
+        var overlaysTree = [
+            {label: '<img src="legend/Hvtn_19.png" /> Họ và tên', layer: layer_Hvtn_19},
+            {label: '<img src="legend/Ngythngnmcp_18.png" /> Ngày, tháng, năm cấp ', layer: layer_Ngythngnmcp_18},
+            {label: '<img src="legend/SCNQSD_17.png" /> Số CNQSDĐ', layer: layer_SCNQSD_17},
+            {label: '<img src="legend/Tnggitttcccloi_16.png" /> Tổng giá đất tất cả các loại', layer: layer_Tnggitttcccloi_16},
+            {label: '<img src="legend/Gitbithngvt_15.png" /> Giá đất bồi thường về đất ', layer: layer_Gitbithngvt_15},
+            {label: '<img src="legend/Bithngvtdngphkintrc_14.png" /> Bồi thường vật dụng phụ. kiến trúc ', layer: layer_Bithngvtdngphkintrc_14},
+            {label: '<img src="legend/Bithngcytrng_13.png" /> Bồi thường cây trồng', layer: layer_Bithngcytrng_13},
+            {label: '<img src="legend/Bithnghtrvcngtrnhxydng_12.png" /> Bồi thường, hỗ trợ về công trình xây dựng ', layer: layer_Bithnghtrvcngtrnhxydng_12},
+            {label: '<img src="legend/Stha_11.png" /> Số thửa  ', layer: layer_Stha_11},
+            {label: '<img src="legend/Stbn_10.png" /> Số tờ bản đồ', layer: cluster_Stbn_10},
+            {label: '<img src="legend/Dintchthuhi_9.png" /> Diện tích thu hồi ', layer: layer_Dintchthuhi_9},
+            {label: '<img src="legend/Nicp_8.png" /> Nơi cấp', layer: layer_Nicp_8},
+            {label: '<img src="legend/Tuynngvnhai4_7.png" /> Tuyến đường vành đai 4', layer: layer_Tuynngvnhai4_7},
+            {label: '<img src="legend/Tuynngchnh_6.png" /> Tuyến đường chính', layer: layer_Tuynngchnh_6},
+            {label: '<img src="legend/Vtr1TtuynngVnhai4n50m_5.png" /> Vị trí 1 Từ tuyến đường Vành đai 4 đến 50m', layer: layer_Vtr1TtuynngVnhai4n50m_5},
+            {label: '<img src="legend/Vtr2T50mn150m_4.png" /> Vị trí 2 Từ 50m đến 150m', layer: layer_Vtr2T50mn150m_4},
+            {label: '<img src="legend/Vtr3T100mn150m_3.png" /> Vị trí 3: Từ 100m đến 150m', layer: layer_Vtr3T100mn150m_3},
+            {label: '<img src="legend/Vtr4T150mn200m_2.png" /> Vị trí 4 Từ 150m đến 200m', layer: layer_Vtr4T150mn200m_2},
+            {label: '<img src="legend/PhngHaLi_1.png" /> Phường Hòa Lợi', layer: layer_PhngHaLi_1},
+            {label: "IDW_Giá đất1", layer: layer_IDW_Git1_0},]
+        var lay = L.control.layers.tree(null, overlaysTree,{
+            //namedToggle: true,
+            //selectorBack: false,
+            //closedSymbol: '&#8862; &#x1f5c0;',
+            //openedSymbol: '&#8863; &#x1f5c1;',
+            //collapseAll: 'Collapse all',
+            //expandAll: 'Expand all',
+            collapsed: false, 
+        });
+        lay.addTo(map);
+		document.addEventListener("DOMContentLoaded", function() {
+            // set new Layers List height which considers toggle icon
+            function newLayersListHeight() {
+                var layerScrollbarElement = document.querySelector('.leaflet-control-layers-scrollbar');
+                if (layerScrollbarElement) {
+                    var layersListElement = document.querySelector('.leaflet-control-layers-list');
+                    var originalHeight = layersListElement.style.height 
+                        || window.getComputedStyle(layersListElement).height;
+                    var newHeight = parseFloat(originalHeight) - 50;
+                    layersListElement.style.height = newHeight + 'px';
+                }
+            }
+            var isLayersListExpanded = true;
+            var controlLayersElement = document.querySelector('.leaflet-control-layers');
+            var toggleLayerControl = document.querySelector('.leaflet-control-layers-toggle');
+            // toggle Collapsed/Expanded and apply new Layers List height
+            toggleLayerControl.addEventListener('click', function() {
+                if (isLayersListExpanded) {
+                    controlLayersElement.classList.remove('leaflet-control-layers-expanded');
+                } else {
+                    controlLayersElement.classList.add('leaflet-control-layers-expanded');
+                }
+                isLayersListExpanded = !isLayersListExpanded;
+                newLayersListHeight()
+            });	
+			// apply new Layers List height if toggle layerstree
+			if (controlLayersElement) {
+				controlLayersElement.addEventListener('click', function(event) {
+					var toggleLayerHeaderPointer = event.target.closest('.leaflet-layerstree-header-pointer span');
+					if (toggleLayerHeaderPointer) {
+						newLayersListHeight();
+					}
+				});
+			}
+            // Collapsed/Expanded at Start to apply new height
+            setTimeout(function() {
+                toggleLayerControl.click();
+            }, 10);
+            setTimeout(function() {
+                toggleLayerControl.click();
+            }, 10);
+            // Collapsed touch/small screen
+            var isSmallScreen = window.innerWidth < 650;
+            if (isSmallScreen) {
+                setTimeout(function() {
+                    controlLayersElement.classList.remove('leaflet-control-layers-expanded');
+                    isLayersListExpanded = !isLayersListExpanded;
+                }, 500);
+            }  
+        });       
+        setBounds();
+        var i = 0;
+        layer_Nicp_8.eachLayer(function(layer) {
+            var context = {
+                feature: layer.feature,
+                variables: {}
+            };
+            layer.bindTooltip((layer.feature.properties['Nơi cấp'] !== null?String('<div style="color: #000000; font-size: 10pt; font-family: \'MS Shell Dlg 2\', sans-serif;">' + layer.feature.properties['Nơi cấp']) + '</div>':''), {permanent: true, offset: [-0, -16], className: 'css_Nicp_8'});
+            labels.push(layer);
+            totalMarkers += 1;
+              layer.added = true;
+              addLabel(layer, i);
+              i++;
+        });
+        var i = 0;
+        layer_Dintchthuhi_9.eachLayer(function(layer) {
+            var context = {
+                feature: layer.feature,
+                variables: {}
+            };
+            layer.bindTooltip((layer.feature.properties['Diện tích thu hồi'] !== null?String('<div style="color: #000000; font-size: 10pt; font-family: \'MS Shell Dlg 2\', sans-serif;">' + layer.feature.properties['Diện tích thu hồi']) + '</div>':''), {permanent: true, offset: [-0, -16], className: 'css_Dintchthuhi_9'});
+            labels.push(layer);
+            totalMarkers += 1;
+              layer.added = true;
+              addLabel(layer, i);
+              i++;
+        });
+        var i = 0;
+        layer_Stbn_10.eachLayer(function(layer) {
+            var context = {
+                feature: layer.feature,
+                variables: {}
+            };
+            layer.bindTooltip((layer.feature.properties['Số tờ bản đồ'] !== null?String('<div style="color: #000000; font-size: 10pt; font-family: \'MS Shell Dlg 2\', sans-serif;">' + layer.feature.properties['Số tờ bản đồ']) + '</div>':''), {permanent: true, offset: [-0, -16], className: 'css_Stbn_10'});
+            labels.push(layer);
+            totalMarkers += 1;
+              layer.added = true;
+              addLabel(layer, i);
+              i++;
+        });
+        var i = 0;
+        layer_Stha_11.eachLayer(function(layer) {
+            var context = {
+                feature: layer.feature,
+                variables: {}
+            };
+            layer.bindTooltip((layer.feature.properties['Số thửa'] !== null?String('<div style="color: #000000; font-size: 10pt; font-family: \'MS Shell Dlg 2\', sans-serif;">' + layer.feature.properties['Số thửa']) + '</div>':''), {permanent: true, offset: [-0, -16], className: 'css_Stha_11'});
+            labels.push(layer);
+            totalMarkers += 1;
+              layer.added = true;
+              addLabel(layer, i);
+              i++;
+        });
+        var i = 0;
+        layer_Bithnghtrvcngtrnhxydng_12.eachLayer(function(layer) {
+            var context = {
+                feature: layer.feature,
+                variables: {}
+            };
+            layer.bindTooltip((layer.feature.properties['Bồi thường. hỗ trợ công trình xây dựng'] !== null?String('<div style="color: #000000; font-size: 10pt; font-family: \'MS Shell Dlg 2\', sans-serif;">' + layer.feature.properties['Bồi thường. hỗ trợ công trình xây dựng']) + '</div>':''), {permanent: true, offset: [-0, -16], className: 'css_Bithnghtrvcngtrnhxydng_12'});
+            labels.push(layer);
+            totalMarkers += 1;
+              layer.added = true;
+              addLabel(layer, i);
+              i++;
+        });
+        var i = 0;
+        layer_Bithngcytrng_13.eachLayer(function(layer) {
+            var context = {
+                feature: layer.feature,
+                variables: {}
+            };
+            layer.bindTooltip((layer.feature.properties['Bồi thường cây trồng'] !== null?String('<div style="color: #000000; font-size: 10pt; font-family: \'MS Shell Dlg 2\', sans-serif;">' + layer.feature.properties['Bồi thường cây trồng']) + '</div>':''), {permanent: true, offset: [-0, -16], className: 'css_Bithngcytrng_13'});
+            labels.push(layer);
+            totalMarkers += 1;
+              layer.added = true;
+              addLabel(layer, i);
+              i++;
+        });
+        var i = 0;
+        layer_Bithngvtdngphkintrc_14.eachLayer(function(layer) {
+            var context = {
+                feature: layer.feature,
+                variables: {}
+            };
+            layer.bindTooltip((layer.feature.properties['Bồi thường công trình phụ. vật kiến trúc'] !== null?String('<div style="color: #000000; font-size: 10pt; font-family: \'MS Shell Dlg 2\', sans-serif;">' + layer.feature.properties['Bồi thường công trình phụ. vật kiến trúc']) + '</div>':''), {permanent: true, offset: [-0, -16], className: 'css_Bithngvtdngphkintrc_14'});
+            labels.push(layer);
+            totalMarkers += 1;
+              layer.added = true;
+              addLabel(layer, i);
+              i++;
+        });
+        var i = 0;
+        layer_Gitbithngvt_15.eachLayer(function(layer) {
+            var context = {
+                feature: layer.feature,
+                variables: {}
+            };
+            layer.bindTooltip((layer.feature.properties['Tổng'] !== null?String('<div style="color: #000000; font-size: 10pt; font-family: \'MS Shell Dlg 2\', sans-serif;">' + layer.feature.properties['Tổng']) + '</div>':''), {permanent: true, offset: [-0, -16], className: 'css_Gitbithngvt_15'});
+            labels.push(layer);
+            totalMarkers += 1;
+              layer.added = true;
+              addLabel(layer, i);
+              i++;
+        });
+        var i = 0;
+        layer_Tnggitttcccloi_16.eachLayer(function(layer) {
+            var context = {
+                feature: layer.feature,
+                variables: {}
+            };
+            layer.bindTooltip((layer.feature.properties['Tổng cộng'] !== null?String('<div style="color: #000000; font-size: 10pt; font-family: \'MS Shell Dlg 2\', sans-serif;">' + layer.feature.properties['Tổng cộng']) + '</div>':''), {permanent: true, offset: [-0, -16], className: 'css_Tnggitttcccloi_16'});
+            labels.push(layer);
+            totalMarkers += 1;
+              layer.added = true;
+              addLabel(layer, i);
+              i++;
+        });
+        var i = 0;
+        layer_SCNQSD_17.eachLayer(function(layer) {
+            var context = {
+                feature: layer.feature,
+                variables: {}
+            };
+            layer.bindTooltip((layer.feature.properties['Số GCNQSDĐ'] !== null?String('<div style="color: #000000; font-size: 10pt; font-family: \'MS Shell Dlg 2\', sans-serif;">' + layer.feature.properties['Số GCNQSDĐ']) + '</div>':''), {permanent: true, offset: [-0, -16], className: 'css_SCNQSD_17'});
+            labels.push(layer);
+            totalMarkers += 1;
+              layer.added = true;
+              addLabel(layer, i);
+              i++;
+        });
+        var i = 0;
+        layer_Ngythngnmcp_18.eachLayer(function(layer) {
+            var context = {
+                feature: layer.feature,
+                variables: {}
+            };
+            layer.bindTooltip((layer.feature.properties['Ngày. tháng. năm cấp'] !== null?String('<div style="color: #000000; font-size: 10pt; font-family: \'MS Shell Dlg 2\', sans-serif;">' + layer.feature.properties['Ngày. tháng. năm cấp']) + '</div>':''), {permanent: true, offset: [-0, -16], className: 'css_Ngythngnmcp_18'});
+            labels.push(layer);
+            totalMarkers += 1;
+              layer.added = true;
+              addLabel(layer, i);
+              i++;
+        });
+        var i = 0;
+        layer_Hvtn_19.eachLayer(function(layer) {
+            var context = {
+                feature: layer.feature,
+                variables: {}
+            };
+            layer.bindTooltip((layer.feature.properties['Họ và tên'] !== null?String('<div style="color: #000000; font-size: 13pt; font-family: \'Times New Roman\', sans-serif;">' + layer.feature.properties['Họ và tên']) + '</div>':''), {permanent: true, offset: [-0, -16], className: 'css_Hvtn_19'});
+            labels.push(layer);
+            totalMarkers += 1;
+              layer.added = true;
+              addLabel(layer, i);
+              i++;
+        });
+        L.ImageOverlay.include({
+            getBounds: function () {
+                return this._bounds;
+            }
+        });
+        resetLabels([layer_Nicp_8,layer_Dintchthuhi_9,layer_Stbn_10,layer_Stha_11,layer_Bithnghtrvcngtrnhxydng_12,layer_Bithngcytrng_13,layer_Bithngvtdngphkintrc_14,layer_Gitbithngvt_15,layer_Tnggitttcccloi_16,layer_SCNQSD_17,layer_Ngythngnmcp_18,layer_Hvtn_19]);
+        map.on("zoomend", function(){
+            resetLabels([layer_Nicp_8,layer_Dintchthuhi_9,layer_Stbn_10,layer_Stha_11,layer_Bithnghtrvcngtrnhxydng_12,layer_Bithngcytrng_13,layer_Bithngvtdngphkintrc_14,layer_Gitbithngvt_15,layer_Tnggitttcccloi_16,layer_SCNQSD_17,layer_Ngythngnmcp_18,layer_Hvtn_19]);
+        });
+        map.on("layeradd", function(){
+            resetLabels([layer_Nicp_8,layer_Dintchthuhi_9,layer_Stbn_10,layer_Stha_11,layer_Bithnghtrvcngtrnhxydng_12,layer_Bithngcytrng_13,layer_Bithngvtdngphkintrc_14,layer_Gitbithngvt_15,layer_Tnggitttcccloi_16,layer_SCNQSD_17,layer_Ngythngnmcp_18,layer_Hvtn_19]);
+        });
+        map.on("layerremove", function(){
+            resetLabels([layer_Nicp_8,layer_Dintchthuhi_9,layer_Stbn_10,layer_Stha_11,layer_Bithnghtrvcngtrnhxydng_12,layer_Bithngcytrng_13,layer_Bithngvtdngphkintrc_14,layer_Gitbithngvt_15,layer_Tnggitttcccloi_16,layer_SCNQSD_17,layer_Ngythngnmcp_18,layer_Hvtn_19]);
+        });
+        </script>        
+    </body>
+</html>

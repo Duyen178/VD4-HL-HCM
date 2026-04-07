@@ -1,0 +1,1 @@
+var json_Tuynngvnhai4_7 = {"type":"FeatureCollection","name":"Tuynngvnhai4_7","crs":{"type":"name","properties":{"name":"urn:ogc:def:crs:OGC:1.3:CRS84"}},"features":[{"type":"Feature","properties":{"id":null,"Ten":"VÀNH ĐAI 4"},"geometry":{"type":"MultiLineString","coordinates":[[[106.658168,11.114167],[106.694155,11.113876]]]}}]}
